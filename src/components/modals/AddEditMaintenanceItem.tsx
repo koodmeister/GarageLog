@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { commands, MaintenanceItem } from '../../lib/commands';
+import { Spinner } from '../Spinner';
 
 export interface AddEditMaintenanceItemProps {
   mode: 'add' | 'edit';
@@ -304,6 +305,7 @@ export function AddEditMaintenanceItem({
               disabled={submitting}
               data-testid="btn-submit"
             >
+              {submitting && <Spinner />}
               {mode === 'add' ? 'Add Item' : 'Save Changes'}
             </button>
           </div>

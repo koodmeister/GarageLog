@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { commands, Vehicle } from '../../lib/commands';
+import { Spinner } from '../Spinner';
 
 export interface AddEditVehicleProps {
   mode: 'add' | 'edit';
@@ -255,6 +256,7 @@ export function AddEditVehicle({ mode, vehicle, onSuccess, onClose }: AddEditVeh
               disabled={submitting}
               data-testid="btn-submit"
             >
+              {submitting && <Spinner />}
               {mode === 'add' ? 'Add Vehicle' : 'Save Changes'}
             </button>
           </div>

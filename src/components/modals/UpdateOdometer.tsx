@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { commands, Vehicle } from '../../lib/commands';
+import { Spinner } from '../Spinner';
 
 export interface UpdateOdometerProps {
   vehicle: Vehicle;
@@ -257,6 +258,7 @@ export function UpdateOdometer({ vehicle, onSuccess, onClose }: UpdateOdometerPr
               disabled={submitting || warningKm !== null}
               data-testid="btn-submit"
             >
+              {submitting && <Spinner />}
               Update
             </button>
           </div>

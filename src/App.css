@@ -95,6 +95,10 @@ button {
   margin-right: 5px;
 }
 
+@keyframes garage-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;

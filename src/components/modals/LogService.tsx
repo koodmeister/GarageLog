@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { commands, MaintenanceItem, Vehicle } from '../../lib/commands';
+import { Spinner } from '../Spinner';
 
 export interface LogServiceProps {
   item: MaintenanceItem;
@@ -432,6 +433,7 @@ export function LogService({ item, vehicle, onSuccess, onClose }: LogServiceProp
               disabled={submitting || showLargeJumpWarning}
               data-testid="btn-submit"
             >
+              {submitting && <Spinner />}
               Log Service
             </button>
           </div>
