@@ -26,6 +26,8 @@ pub fn run() {
             commands::maintenance::create_maintenance_item,
             commands::maintenance::update_maintenance_item,
             commands::maintenance::delete_maintenance_item,
+            commands::service_records::log_service,
+            commands::service_records::get_service_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
