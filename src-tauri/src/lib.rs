@@ -1,3 +1,4 @@
+mod commands;
 mod db;
 
 use tauri::Manager;
@@ -18,7 +19,14 @@ pub fn run() {
             app.manage(pool);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            commands::vehicles::get_vehicles,
+            commands::vehicles::create_vehicle,
+            commands::vehicles::update_vehicle,
+            commands::vehicles::archive_vehicle,
+            commands::vehicles::restore_vehicle,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
