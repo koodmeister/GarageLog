@@ -244,7 +244,7 @@ pub async fn get_service_history_inner(
 // Tauri commands — thin wrappers
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn log_service(
     pool: tauri::State<'_, SqlitePool>,
     maintenance_item_id: i64,
@@ -268,7 +268,7 @@ pub async fn log_service(
     .await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_service_history(
     pool: tauri::State<'_, SqlitePool>,
     maintenance_item_id: i64,

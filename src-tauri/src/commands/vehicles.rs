@@ -137,12 +137,12 @@ async fn restore_vehicle_inner(pool: &SqlitePool, id: i64) -> Result<(), String>
 // Tauri commands — thin wrappers around the inner functions
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_vehicles(pool: tauri::State<'_, SqlitePool>) -> Result<Vec<Vehicle>, String> {
     get_vehicles_inner(&pool).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_vehicle(
     pool: tauri::State<'_, SqlitePool>,
     name: String,
@@ -153,7 +153,7 @@ pub async fn create_vehicle(
     create_vehicle_inner(&pool, name, year, vehicle_type, initial_odometer).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_vehicle(
     pool: tauri::State<'_, SqlitePool>,
     id: i64,
@@ -164,12 +164,12 @@ pub async fn update_vehicle(
     update_vehicle_inner(&pool, id, name, year, vehicle_type).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn archive_vehicle(pool: tauri::State<'_, SqlitePool>, id: i64) -> Result<(), String> {
     archive_vehicle_inner(&pool, id).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn restore_vehicle(pool: tauri::State<'_, SqlitePool>, id: i64) -> Result<(), String> {
     restore_vehicle_inner(&pool, id).await
 }

@@ -228,7 +228,7 @@ pub async fn run_check(pool: &SqlitePool, app: &AppHandle, state: &NotificationS
 // Tauri command: trigger a check immediately
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn check_notifications_now(
     pool: tauri::State<'_, SqlitePool>,
     app: tauri::AppHandle,

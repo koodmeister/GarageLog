@@ -224,7 +224,7 @@ async fn delete_maintenance_item_inner(pool: &SqlitePool, id: i64) -> Result<(),
 // Tauri commands — thin wrappers
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn get_maintenance_items(
     pool: tauri::State<'_, SqlitePool>,
     vehicle_id: i64,
@@ -232,7 +232,7 @@ pub async fn get_maintenance_items(
     get_maintenance_items_inner(&pool, vehicle_id).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn create_maintenance_item(
     pool: tauri::State<'_, SqlitePool>,
     vehicle_id: i64,
@@ -245,7 +245,7 @@ pub async fn create_maintenance_item(
         .await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_maintenance_item(
     pool: tauri::State<'_, SqlitePool>,
     id: i64,
@@ -257,7 +257,7 @@ pub async fn update_maintenance_item(
     update_maintenance_item_inner(&pool, id, name, interval_months, interval_km, notes).await
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn delete_maintenance_item(
     pool: tauri::State<'_, SqlitePool>,
     id: i64,

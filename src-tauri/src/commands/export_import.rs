@@ -196,7 +196,7 @@ async fn fetch_all_odometer_readings(
 // export_json
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn export_json(
     pool: tauri::State<'_, SqlitePool>,
     app: tauri::AppHandle,
@@ -237,7 +237,7 @@ pub async fn export_json(
 // export_csv
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn export_csv(
     pool: tauri::State<'_, SqlitePool>,
     app: tauri::AppHandle,
@@ -379,7 +379,7 @@ pub async fn export_csv(
 // import_json
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn import_json(
     pool: tauri::State<'_, SqlitePool>,
     app: tauri::AppHandle,
@@ -453,7 +453,7 @@ pub async fn import_json(
 // confirm_import
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn confirm_import(
     pool: tauri::State<'_, SqlitePool>,
     import_data: String,

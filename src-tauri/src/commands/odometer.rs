@@ -95,7 +95,7 @@ async fn update_odometer_inner(
 // Tauri command — thin wrapper around the inner function
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn update_odometer(
     pool: tauri::State<'_, SqlitePool>,
     vehicle_id: i64,
