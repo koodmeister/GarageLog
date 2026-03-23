@@ -3,6 +3,7 @@ mod db;
 pub mod models;
 pub mod notifications;
 pub mod status;
+mod tray;
 
 use std::time::Duration;
 use tauri::Manager;
@@ -21,6 +22,9 @@ pub fn run() {
 
             // Manage notification cooldown state.
             app.manage(NotificationState::new());
+
+            // Set up system tray.
+            tray::setup_tray(app)?;
 
             // Spawn background task: startup check + hourly loop.
             let pool_for_notif = app.state::<sqlx::SqlitePool>().inner().clone();
