@@ -1,5 +1,6 @@
 mod commands;
 mod db;
+pub mod models;
 
 use tauri::Manager;
 
@@ -19,6 +20,7 @@ pub fn run() {
             commands::vehicles::update_vehicle,
             commands::vehicles::archive_vehicle,
             commands::vehicles::restore_vehicle,
+            commands::odometer::update_odometer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
