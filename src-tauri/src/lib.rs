@@ -15,6 +15,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let pool = tauri::async_runtime::block_on(db::setup_database(app))
                 .expect("failed to initialize database");
@@ -55,6 +56,10 @@ pub fn run() {
             commands::maintenance::delete_maintenance_item,
             commands::service_records::log_service,
             commands::service_records::get_service_history,
+            commands::export_import::export_json,
+            commands::export_import::export_csv,
+            commands::export_import::import_json,
+            commands::export_import::confirm_import,
             check_notifications_now,
         ])
         .run(tauri::generate_context!())
