@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/rifle/.rustup/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(powershell.exe -Command \"Get-Command rustc 2>&1\")",
+      "Bash(powershell.exe -Command \"winget list | Select-String -Pattern ''rust'' -CaseSensitive:$false\")",
+      "Bash(export PATH=\"$PATH:/c/Users/rifle/.cargo/bin\")",
+      "Bash(rustc --version)",
+      "Bash(cargo --version)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(cargo build:*)",
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(powershell.exe -Command \"Get-ItemProperty HKLM:\\\\SOFTWARE\\\\Microsoft\\\\VisualStudio\\\\* 2>&1 | Select-Object -First 5\")",
+      "Bash(cmd.exe /c \"where cargo\" 2>&1)",
+      "Bash(ls /c/Users/rifle/.cargo/bin/cargo*)",
+      "Read(//c/Users/rifle/GarageLog/$USERPROFILE/.cargo/**)",
+      "Read(//c/Users/rifle/**)",
+      "Bash(/c/Users/rifle/.cargo/bin/cargo build:*)"
+    ]
+  }
+}
