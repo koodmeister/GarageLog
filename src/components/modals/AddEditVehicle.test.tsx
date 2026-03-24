@@ -16,6 +16,8 @@ const mockVehicle: Vehicle = {
   archived: false,
   archived_at: null,
   created_at: '2024-01-01T00:00:00Z',
+  vin: null,
+  license_plate: null,
 };
 
 beforeEach(() => {
@@ -47,6 +49,8 @@ describe('AddEditVehicle – add mode', () => {
         year: 2021,
         vehicle_type: 'truck',
         initial_odometer: 15000,
+        vin: null,
+        license_plate: null,
       });
     });
 
@@ -143,6 +147,8 @@ describe('AddEditVehicle – edit mode', () => {
         name: 'Updated Car',
         year: 2021,
         vehicle_type: 'motorcycle',
+        vin: null,
+        license_plate: null,
       });
     });
 

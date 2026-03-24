@@ -11,6 +11,8 @@ export interface Vehicle {
   archived: boolean;
   archived_at: string | null;
   created_at: string;
+  vin: string | null;
+  license_plate: string | null;
 }
 
 export interface MaintenanceItem {
@@ -68,9 +70,9 @@ export interface VehicleResolution {
 // Commands
 export const commands = {
   getVehicles: () => invoke<Vehicle[]>('get_vehicles'),
-  createVehicle: (args: { name: string; year: number; vehicle_type: string; initial_odometer: number }) =>
+  createVehicle: (args: { name: string; year: number; vehicle_type: string; initial_odometer: number; vin: string | null; license_plate: string | null }) =>
     invoke<Vehicle>('create_vehicle', args),
-  updateVehicle: (args: { id: number; name: string; year: number; vehicle_type: string }) =>
+  updateVehicle: (args: { id: number; name: string; year: number; vehicle_type: string; vin: string | null; license_plate: string | null }) =>
     invoke<Vehicle>('update_vehicle', args),
   archiveVehicle: (id: number) => invoke<void>('archive_vehicle', { id }),
   restoreVehicle: (id: number) => invoke<void>('restore_vehicle', { id }),

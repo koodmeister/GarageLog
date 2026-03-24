@@ -8,7 +8,7 @@ use crate::models::{now_utc, row_to_vehicle, Vehicle};
 
 async fn get_vehicles_inner(pool: &SqlitePool) -> Result<Vec<Vehicle>, String> {
     let rows = sqlx::query(
-        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at \
+        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at, vin, license_plate \
          FROM vehicles ORDER BY archived ASC, id ASC",
     )
     .fetch_all(pool)
@@ -24,6 +24,8 @@ async fn create_vehicle_inner(
     year: i64,
     vehicle_type: String,
     initial_odometer: i64,
+    vin: Option<String>,
+    license_plate: Option<String>,
 ) -> Result<Vehicle, String> {
     let now = now_utc();
 
@@ -31,8 +33,8 @@ async fn create_vehicle_inner(
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     let result = sqlx::query(
-        "INSERT INTO vehicles (name, year, type, current_odometer, odometer_updated_at, archived, created_at) \
-         VALUES (?, ?, ?, ?, ?, 0, ?) RETURNING id",
+        "INSERT INTO vehicles (name, year, type, current_odometer, odometer_updated_at, archived, created_at, vin, license_plate) \
+         VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?) RETURNING id",
     )
     .bind(&name)
     .bind(year)
@@ -40,6 +42,8 @@ async fn create_vehicle_inner(
     .bind(initial_odometer)
     .bind(&now)
     .bind(&now)
+    .bind(&vin)
+    .bind(&license_plate)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| e.to_string())?;
@@ -60,7 +64,7 @@ async fn create_vehicle_inner(
 
     // SELECT after commit, against pool.
     let vehicle_row = sqlx::query(
-        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at \
+        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at, vin, license_plate \
          FROM vehicles WHERE id = ?",
     )
     .bind(vehicle_id)
@@ -77,22 +81,28 @@ async fn update_vehicle_inner(
     name: String,
     year: i64,
     vehicle_type: String,
+    vin: Option<String>,
+    license_plate: Option<String>,
 ) -> Result<Vehicle, String> {
-    let result = sqlx::query("UPDATE vehicles SET name = ?, year = ?, type = ? WHERE id = ?")
-        .bind(&name)
-        .bind(year)
-        .bind(&vehicle_type)
-        .bind(id)
-        .execute(pool)
-        .await
-        .map_err(|e| e.to_string())?;
+    let result = sqlx::query(
+        "UPDATE vehicles SET name = ?, year = ?, type = ?, vin = ?, license_plate = ? WHERE id = ?",
+    )
+    .bind(&name)
+    .bind(year)
+    .bind(&vehicle_type)
+    .bind(&vin)
+    .bind(&license_plate)
+    .bind(id)
+    .execute(pool)
+    .await
+    .map_err(|e| e.to_string())?;
 
     if result.rows_affected() == 0 {
         return Err(format!("vehicle with id {} not found", id));
     }
 
     let vehicle_row = sqlx::query(
-        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at \
+        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at, vin, license_plate \
          FROM vehicles WHERE id = ?",
     )
     .bind(id)
@@ -149,8 +159,10 @@ pub async fn create_vehicle(
     year: i64,
     vehicle_type: String,
     initial_odometer: i64,
+    vin: Option<String>,
+    license_plate: Option<String>,
 ) -> Result<Vehicle, String> {
-    create_vehicle_inner(&pool, name, year, vehicle_type, initial_odometer).await
+    create_vehicle_inner(&pool, name, year, vehicle_type, initial_odometer, vin, license_plate).await
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -160,8 +172,10 @@ pub async fn update_vehicle(
     name: String,
     year: i64,
     vehicle_type: String,
+    vin: Option<String>,
+    license_plate: Option<String>,
 ) -> Result<Vehicle, String> {
-    update_vehicle_inner(&pool, id, name, year, vehicle_type).await
+    update_vehicle_inner(&pool, id, name, year, vehicle_type, vin, license_plate).await
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -198,7 +212,9 @@ mod tests {
                 odometer_updated_at DATETIME NOT NULL,
                 archived BOOLEAN NOT NULL DEFAULT 0,
                 archived_at DATETIME,
-                created_at DATETIME NOT NULL
+                created_at DATETIME NOT NULL,
+                vin TEXT,
+                license_plate TEXT
             )",
         )
         .execute(&pool)
@@ -225,7 +241,7 @@ mod tests {
     async fn test_create_vehicle_inserts_vehicle_and_odometer_reading() {
         let pool = setup_test_db().await;
 
-        let vehicle = create_vehicle_inner(&pool, "My Truck".into(), 2020, "truck".into(), 50000)
+        let vehicle = create_vehicle_inner(&pool, "My Truck".into(), 2020, "truck".into(), 50000, None, None)
             .await
             .unwrap();
 
@@ -252,10 +268,10 @@ mod tests {
     async fn test_get_vehicles_returns_all() {
         let pool = setup_test_db().await;
 
-        create_vehicle_inner(&pool, "Car A".into(), 2019, "car".into(), 10000)
+        create_vehicle_inner(&pool, "Car A".into(), 2019, "car".into(), 10000, None, None)
             .await
             .unwrap();
-        create_vehicle_inner(&pool, "Car B".into(), 2021, "truck".into(), 20000)
+        create_vehicle_inner(&pool, "Car B".into(), 2021, "truck".into(), 20000, None, None)
             .await
             .unwrap();
 
@@ -273,12 +289,12 @@ mod tests {
     async fn test_update_vehicle_updates_name_year_type_only() {
         let pool = setup_test_db().await;
         let created =
-            create_vehicle_inner(&pool, "Old Name".into(), 2015, "car".into(), 30000)
+            create_vehicle_inner(&pool, "Old Name".into(), 2015, "car".into(), 30000, None, None)
                 .await
                 .unwrap();
 
         let updated =
-            update_vehicle_inner(&pool, created.id, "New Name".into(), 2022, "truck".into())
+            update_vehicle_inner(&pool, created.id, "New Name".into(), 2022, "truck".into(), None, None)
                 .await
                 .unwrap();
 
@@ -295,7 +311,7 @@ mod tests {
     async fn test_archive_vehicle_sets_archived_and_archived_at() {
         let pool = setup_test_db().await;
         let created =
-            create_vehicle_inner(&pool, "My Van".into(), 2018, "van".into(), 15000)
+            create_vehicle_inner(&pool, "My Van".into(), 2018, "van".into(), 15000, None, None)
                 .await
                 .unwrap();
 
@@ -314,7 +330,7 @@ mod tests {
     async fn test_restore_vehicle_clears_archived_and_archived_at() {
         let pool = setup_test_db().await;
         let created =
-            create_vehicle_inner(&pool, "My Van".into(), 2018, "van".into(), 15000)
+            create_vehicle_inner(&pool, "My Van".into(), 2018, "van".into(), 15000, None, None)
                 .await
                 .unwrap();
 

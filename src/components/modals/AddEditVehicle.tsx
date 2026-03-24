@@ -92,6 +92,8 @@ export function AddEditVehicle({ mode, vehicle, onSuccess, onClose }: AddEditVeh
   const [year, setYear] = useState(vehicle?.year?.toString() ?? '');
   const [type, setType] = useState(vehicle?.type?.toLowerCase() ?? 'car');
   const [odometer, setOdometer] = useState('0');
+  const [vin, setVin] = useState(vehicle?.vin ?? '');
+  const [licensePlate, setLicensePlate] = useState(vehicle?.license_plate ?? '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -139,12 +141,16 @@ export function AddEditVehicle({ mode, vehicle, onSuccess, onClose }: AddEditVeh
     setSubmitting(true);
     try {
       let result: Vehicle;
+      const vinValue = vin.trim() || null;
+      const plateValue = licensePlate.trim() || null;
       if (mode === 'add') {
         result = await commands.createVehicle({
           name: name.trim(),
           year: parseInt(year, 10),
           vehicle_type: type,
           initial_odometer: parseInt(odometer, 10),
+          vin: vinValue,
+          license_plate: plateValue,
         });
       } else {
         result = await commands.updateVehicle({
@@ -152,6 +158,8 @@ export function AddEditVehicle({ mode, vehicle, onSuccess, onClose }: AddEditVeh
           name: name.trim(),
           year: parseInt(year, 10),
           vehicle_type: type,
+          vin: vinValue,
+          license_plate: plateValue,
         });
       }
       onSuccess(result);
@@ -218,6 +226,34 @@ export function AddEditVehicle({ mode, vehicle, onSuccess, onClose }: AddEditVeh
               ))}
             </select>
             {errors.type && <span style={errorStyle} data-testid="error-type">{errors.type}</span>}
+          </div>
+
+          {/* VIN */}
+          <div style={fieldStyle}>
+            <label htmlFor="vehicle-vin" style={labelStyle}>VIN <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span></label>
+            <input
+              id="vehicle-vin"
+              type="text"
+              value={vin}
+              onChange={(e) => setVin(e.target.value)}
+              style={inputStyle}
+              placeholder="e.g. 1HGBH41JXMN109186"
+              data-testid="input-vin"
+            />
+          </div>
+
+          {/* Licence Plate */}
+          <div style={fieldStyle}>
+            <label htmlFor="vehicle-license-plate" style={labelStyle}>Licence Plate <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span></label>
+            <input
+              id="vehicle-license-plate"
+              type="text"
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+              style={inputStyle}
+              placeholder="e.g. ABC-1234"
+              data-testid="input-license-plate"
+            />
           </div>
 
           {/* Odometer (add mode only) */}

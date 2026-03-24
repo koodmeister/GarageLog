@@ -216,8 +216,7 @@ describe('VehicleDetail', () => {
     expect(onOpenAddEditItem).toHaveBeenCalledWith(1, 7);
   });
 
-  it('delete calls window.confirm then deleteMaintenanceItem and re-fetches', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('delete shows confirm dialog then deleteMaintenanceItem and re-fetches on confirm', async () => {
     const fetchItems = vi.fn().mockResolvedValue(undefined);
     const items = [makeItem({ id: 5 })];
     renderDetail({}, { itemsByVehicle: { 1: items }, fetchItems });
@@ -225,31 +224,34 @@ describe('VehicleDetail', () => {
     fireEvent.click(screen.getByTestId('row-overflow-btn'));
     fireEvent.click(screen.getByText('Delete'));
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Deleting this item will also remove all its service history. Continue?'
-    );
+    // Confirm dialog should appear
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
+    expect(commands.deleteMaintenanceItem).not.toHaveBeenCalled();
+
+    // Click the confirm button
+    fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
+
     await waitFor(() => {
       expect(commands.deleteMaintenanceItem).toHaveBeenCalledWith(5);
     });
     await waitFor(() => {
       expect(fetchItems).toHaveBeenCalledWith(1);
     });
-
-    confirmSpy.mockRestore();
   });
 
-  it('does not call deleteMaintenanceItem if confirm is cancelled', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('does not call deleteMaintenanceItem if confirm dialog is cancelled', async () => {
     const items = [makeItem({ id: 5 })];
     renderDetail({}, { itemsByVehicle: { 1: items } });
 
     fireEvent.click(screen.getByTestId('row-overflow-btn'));
     fireEvent.click(screen.getByText('Delete'));
 
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(commands.deleteMaintenanceItem).not.toHaveBeenCalled();
+    expect(screen.getByTestId('confirm-dialog')).toBeInTheDocument();
 
-    confirmSpy.mockRestore();
+    fireEvent.click(screen.getByTestId('confirm-dialog-cancel'));
+
+    expect(commands.deleteMaintenanceItem).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('confirm-dialog')).not.toBeInTheDocument();
   });
 
   it('fetches items on mount', () => {

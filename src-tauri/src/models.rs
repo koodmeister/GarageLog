@@ -13,6 +13,8 @@ pub struct Vehicle {
     pub archived: bool,
     pub archived_at: Option<String>,
     pub created_at: String,
+    pub vin: Option<String>,
+    pub license_plate: Option<String>,
 }
 
 pub fn now_utc() -> String {
@@ -31,5 +33,7 @@ pub fn row_to_vehicle(r: sqlx::sqlite::SqliteRow) -> Vehicle {
         archived: archived_int != 0,
         archived_at: r.get("archived_at"),
         created_at: r.get("created_at"),
+        vin: r.get("vin"),
+        license_plate: r.get("license_plate"),
     }
 }

@@ -3,6 +3,7 @@ import { useVehiclesStore } from '../stores/vehicles';
 import { useMaintenanceStore } from '../stores/maintenance';
 import { commands, MaintenanceItem } from '../lib/commands';
 import { MaintenanceRow } from '../components/MaintenanceRow';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 
 type FilterTab = 'All' | 'Overdue' | 'DueSoon' | 'Ok';
@@ -44,6 +45,7 @@ export function VehicleDetail({
   const { itemsByVehicle, fetchItems } = useMaintenanceStore();
   const { showError } = useToast();
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   const items: MaintenanceItem[] = itemsByVehicle[vehicleId] ?? [];
@@ -53,11 +55,14 @@ export function VehicleDetail({
     fetchItems(vehicleId).catch((err) => showError(String(err)));
   }, [vehicleId, fetchItems, showError]);
 
-  const handleDelete = async (itemId: number) => {
-    const confirmed = window.confirm(
-      'Deleting this item will also remove all its service history. Continue?'
-    );
-    if (!confirmed) return;
+  const handleDelete = (itemId: number) => {
+    setPendingDeleteId(itemId);
+  };
+
+  const confirmDelete = async () => {
+    if (pendingDeleteId === null) return;
+    const itemId = pendingDeleteId;
+    setPendingDeleteId(null);
     try {
       await commands.deleteMaintenanceItem(itemId);
       await fetchItems(vehicleId);
@@ -116,6 +121,12 @@ export function VehicleDetail({
           <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
             {vehicle.type}
           </div>
+          {(vehicle.vin || vehicle.license_plate) && (
+            <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.125rem', display: 'flex', gap: '1rem' }}>
+              {vehicle.vin && <span data-testid="vehicle-vin">VIN: {vehicle.vin}</span>}
+              {vehicle.license_plate && <span data-testid="vehicle-license-plate">{vehicle.license_plate}</span>}
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -172,6 +183,14 @@ export function VehicleDetail({
           </button>
         ))}
       </div>
+
+      {pendingDeleteId !== null && (
+        <ConfirmDialog
+          message="Deleting this item will also remove all its service history. Continue?"
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDeleteId(null)}
+        />
+      )}
 
       {/* Maintenance items list */}
       {items.length === 0 ? (

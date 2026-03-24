@@ -78,7 +78,7 @@ async fn update_odometer_inner(
 
     // Fetch and return the updated vehicle.
     let vehicle_row = sqlx::query(
-        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at \
+        "SELECT id, name, year, type, current_odometer, odometer_updated_at, archived, archived_at, created_at, vin, license_plate \
          FROM vehicles WHERE id = ?",
     )
     .bind(vehicle_id)
@@ -130,7 +130,9 @@ mod tests {
                 odometer_updated_at DATETIME NOT NULL,
                 archived BOOLEAN NOT NULL DEFAULT 0,
                 archived_at DATETIME,
-                created_at DATETIME NOT NULL
+                created_at DATETIME NOT NULL,
+                vin TEXT,
+                license_plate TEXT
             )",
         )
         .execute(&pool)

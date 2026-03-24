@@ -21,6 +21,8 @@ pub struct ExportVehicle {
     pub archived: bool,
     pub archived_at: Option<String>,
     pub created_at: String,
+    pub vin: Option<String>,
+    pub license_plate: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -96,7 +98,7 @@ pub struct VehicleResolution {
 async fn fetch_all_vehicles(pool: &SqlitePool) -> Result<Vec<ExportVehicle>, String> {
     let rows = sqlx::query(
         "SELECT id, name, year, type, current_odometer, odometer_updated_at, \
-         archived, archived_at, created_at FROM vehicles ORDER BY id ASC",
+         archived, archived_at, created_at, vin, license_plate FROM vehicles ORDER BY id ASC",
     )
     .fetch_all(pool)
     .await
@@ -116,6 +118,8 @@ async fn fetch_all_vehicles(pool: &SqlitePool) -> Result<Vec<ExportVehicle>, Str
                 archived: archived_int != 0,
                 archived_at: r.get("archived_at"),
                 created_at: r.get("created_at"),
+                vin: r.get("vin"),
+                license_plate: r.get("license_plate"),
             }
         })
         .collect())
@@ -273,6 +277,7 @@ pub async fn export_csv(
         wtr.write_record(&[
             "id", "name", "year", "type", "current_odometer",
             "odometer_updated_at", "archived", "archived_at", "created_at",
+            "vin", "license_plate",
         ])
         .map_err(|e| e.to_string())?;
         for v in &vehicles {
@@ -286,6 +291,8 @@ pub async fn export_csv(
                 (v.archived as i32).to_string(),
                 v.archived_at.clone().unwrap_or_default(),
                 v.created_at.clone(),
+                v.vin.clone().unwrap_or_default(),
+                v.license_plate.clone().unwrap_or_default(),
             ])
             .map_err(|e| e.to_string())?;
         }
@@ -492,8 +499,8 @@ pub async fn confirm_import(
                 let result = sqlx::query(
                     "INSERT INTO vehicles \
                      (name, year, type, current_odometer, odometer_updated_at, \
-                      archived, archived_at, created_at) \
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                      archived, archived_at, created_at, vin, license_plate) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 )
                 .bind(&imported_vehicle.name)
                 .bind(imported_vehicle.year)
@@ -503,6 +510,8 @@ pub async fn confirm_import(
                 .bind(imported_vehicle.archived as i64)
                 .bind(&imported_vehicle.archived_at)
                 .bind(&imported_vehicle.created_at)
+                .bind(&imported_vehicle.vin)
+                .bind(&imported_vehicle.license_plate)
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| e.to_string())?;

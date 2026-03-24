@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use chrono::{DateTime, Months, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 use tauri::AppHandle;
 use tauri_plugin_notification::NotificationExt;
@@ -21,89 +21,6 @@ impl NotificationState {
         Self {
             last_notified: Mutex::new(HashMap::new()),
         }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers for computing remaining days / km (used in notification body)
-// ---------------------------------------------------------------------------
-
-fn parse_date(s: &str) -> Option<NaiveDate> {
-    if let Ok(dt) = s.parse::<DateTime<Utc>>() {
-        return Some(dt.date_naive());
-    }
-    if let Ok(ndt) = chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.3fZ") {
-        return Some(ndt.date());
-    }
-    None
-}
-
-/// Returns remaining days until the time-based service is due.
-/// Positive = future, negative = overdue.
-fn days_remaining(
-    interval_months: i64,
-    last_serviced_at: Option<&str>,
-    item_created_at: &str,
-) -> Option<i64> {
-    let baseline_str = last_serviced_at.unwrap_or(item_created_at);
-    let baseline = parse_date(baseline_str)?;
-    let next_due = baseline.checked_add_months(Months::new(interval_months as u32))?;
-    let today = Utc::now().date_naive();
-    Some((next_due - today).num_days())
-}
-
-/// Returns remaining km until the km-based service is due.
-/// Positive = not yet due, negative = overdue.
-fn km_remaining(
-    interval_km: i64,
-    last_odometer_at_service: Option<i64>,
-    current_odometer: i64,
-) -> Option<i64> {
-    let baseline_km = last_odometer_at_service?;
-    let next_due_km = baseline_km + interval_km;
-    Some(next_due_km - current_odometer)
-}
-
-// ---------------------------------------------------------------------------
-// Build notification body
-// ---------------------------------------------------------------------------
-
-fn build_body(
-    vehicle_name: &str,
-    item_name: &str,
-    status: &MaintenanceStatus,
-    interval_months: Option<i64>,
-    interval_km: Option<i64>,
-    last_serviced_at: Option<&str>,
-    last_odometer_at_service: Option<i64>,
-    current_odometer: i64,
-    item_created_at: &str,
-) -> String {
-    match status {
-        MaintenanceStatus::Overdue => {
-            format!("{vehicle_name} \u{2014} {item_name} is overdue")
-        }
-        MaintenanceStatus::DueSoon => {
-            let days = interval_months
-                .and_then(|m| days_remaining(m, last_serviced_at, item_created_at))
-                .filter(|&d| d >= 0 && d <= 30);
-
-            let km = interval_km
-                .and_then(|k| km_remaining(k, last_odometer_at_service, current_odometer))
-                .filter(|&k| k >= 0 && k <= 500);
-
-            let suffix = match (days, km) {
-                (Some(d), Some(k)) => format!("due in {d} days / {k} km"),
-                (Some(d), None) => format!("due in {d} days"),
-                (None, Some(k)) => format!("due in {k} km"),
-                // Fallback: at least one interval must have triggered DueSoon
-                (None, None) => "due soon".to_string(),
-            };
-
-            format!("{vehicle_name} \u{2014} {item_name} {suffix}")
-        }
-        // Ok / Unknown should never reach here, but handle gracefully
-        _ => format!("{vehicle_name} \u{2014} {item_name} needs attention"),
     }
 }
 
@@ -161,6 +78,9 @@ pub async fn run_check(pool: &SqlitePool, app: &AppHandle, state: &NotificationS
             }
         };
 
+        // Collect all items that need a notification for this vehicle.
+        let mut items_to_notify: Vec<(i64, String, MaintenanceStatus)> = Vec::new();
+
         for item_row in &items {
             let item_id: i64 = item_row.get("id");
             let item_name: String = item_row.get("name");
@@ -195,30 +115,46 @@ pub async fn run_check(pool: &SqlitePool, app: &AppHandle, state: &NotificationS
                 }
             }
 
-            // 6. Build and fire notification.
-            let body = build_body(
-                &vehicle_name,
-                &item_name,
-                &status,
-                interval_months,
-                interval_km,
-                last_serviced_at.as_deref(),
-                last_odometer_at_service,
-                current_odometer,
-                &item_created_at,
-            );
+            items_to_notify.push((item_id, item_name, status));
+        }
 
-            app.notification()
-                .builder()
-                .title("GarageLog")
-                .body(&body)
-                .show()
-                .ok();
+        if items_to_notify.is_empty() {
+            continue;
+        }
 
-            // 7. Record notification time.
-            {
-                let mut map = state.last_notified.lock().unwrap();
-                map.insert(item_id, now);
+        // 6. Build a single combined notification for this vehicle.
+        let overdue_count = items_to_notify
+            .iter()
+            .filter(|(_, _, s)| *s == MaintenanceStatus::Overdue)
+            .count();
+        let due_soon_count = items_to_notify.len() - overdue_count;
+
+        let body = match (overdue_count, due_soon_count) {
+            (o, 0) => format!(
+                "{vehicle_name} \u{2014} {o} item{} overdue",
+                if o == 1 { "" } else { "s" }
+            ),
+            (0, d) => format!(
+                "{vehicle_name} \u{2014} {d} item{} due soon",
+                if d == 1 { "" } else { "s" }
+            ),
+            (o, d) => format!(
+                "{vehicle_name} \u{2014} {o} overdue, {d} due soon",
+            ),
+        };
+
+        app.notification()
+            .builder()
+            .title("GarageLog")
+            .body(&body)
+            .show()
+            .ok();
+
+        // 7. Record notification time for all notified items.
+        {
+            let mut map = state.last_notified.lock().unwrap();
+            for (item_id, _, _) in &items_to_notify {
+                map.insert(*item_id, now);
             }
         }
     }
